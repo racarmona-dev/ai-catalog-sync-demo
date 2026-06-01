@@ -1,0 +1,421 @@
+{
+  "name": "Catalog Sync Demo",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## 🤖 Catalog Sync Demo\n\nAutomatic catalog synchronization using AI.\n\n**Flow:**\n1. Supplier triggers webhook\n2. Fetch both catalogs in parallel\n3. AI detects name/price divergences\n4. Update marketplace automatically\n\n**Trigger:**\n```\nPOST /webhook/catalog-sync\n```",
+        "height": 748,
+        "width": 452,
+        "color": 5
+      },
+      "id": "d08187d8-51c5-4da2-8ca5-912602b7aab6",
+      "name": "Sticky Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -192,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 📥 Data Collection\nFetches both catalogs **in parallel**.\n\n- 🏬 **Marketplace** → `localhost:8080/api/products`\n- 🏭 **Supplier** → `localhost:8081/api/products`",
+        "height": 744,
+        "width": 980,
+        "color": 3
+      },
+      "id": "1c674430-64ca-4c2d-8fc2-824c14dfb391",
+      "name": "Sticky Note1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        304,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🤖 AI Analysis\nThe LLM compares both lists and returns **only divergent products**.\n\n**Divergence rule:**\n- Name differs (case-insensitive)\n- Price differs by more than 0.01\n\nReturns: `{ \"updates\": [...] }`",
+        "height": 744,
+        "width": 736,
+        "color": 2
+      },
+      "id": "c32eaa42-a791-4c49-9688-feeff053b64f",
+      "name": "Sticky Note2",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1296,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## 🔄 Sync Decision\n\n**IF** product has `marketplace_id`:\n- ✅ **True** → Update marketplace product\n- ⏭️ **False** → No changes needed, skip\n\nPrevents HTTP errors when AI returns empty updates.",
+        "height": 744,
+        "width": 588,
+        "color": 4
+      },
+      "id": "fb1d41a1-54e2-4856-af56-2281be46a828",
+      "name": "Sticky Note3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2048,
+        -32
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "catalog-sync",
+        "options": {}
+      },
+      "id": "46466766-2431-463b-842c-823d76b27b07",
+      "name": "Supplier Sync Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        352
+      ],
+      "webhookId": "catalog-sync-demo-001"
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:8080/api/products",
+        "options": {}
+      },
+      "id": "227b8153-0e44-4a1b-ab54-d2216c243307",
+      "name": "Fetch Marketplace Products",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        512,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:8081/api/products",
+        "options": {}
+      },
+      "id": "092f3f3e-0baa-4c09-a635-62a7a6755d58",
+      "name": "Fetch Supplier Products",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        496,
+        528
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const products = $input.all().map(i => i.json);\nreturn [{ json: { marketplace_products: products } }];"
+      },
+      "id": "9863ce2c-0044-4d85-8382-b4f8071f0b93",
+      "name": "Wrap Marketplace",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const products = $input.all().map(i => i.json);\nreturn [{ json: { supplier_products: products } }];"
+      },
+      "id": "74f87d51-75c9-4397-b08c-4d838d2bbdf7",
+      "name": "Wrap Supplier",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        768,
+        528
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "1610b678-9c9e-4c5a-81af-2d7bd42571f0",
+      "name": "Merge Catalogs",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1088,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "c935458a-cdd4-4011-a8c0-0d489778ef0b",
+      "name": "Aggregate Catalogs",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1408,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You receive two product lists from a marketplace and a supplier.\nIdentify products where the name OR price diverges.\nProducts are matched by their position/index (same order in both lists).\n\nRules:\n- If name differs (case-insensitive): it is a divergence\n- If price differs by more than 0.01: it is a divergence\n- If both match: skip the product\n\nMarketplace products:\n{{ JSON.stringify($json.data[0].marketplace_products, null, 2) }}\n\nSupplier products:\n{{ JSON.stringify($json.data[1].supplier_products, null, 2) }}\n\nReturn ONLY a valid JSON object, no extra text, no markdown:\n{\n  \"updates\": [\n    {\n      \"marketplace_id\": <id from marketplace product>,\n      \"name\": <supplier name>,\n      \"price\": <supplier price>\n    }\n  ]\n}\n\nIf no divergences found, return: {\"updates\": []}"
+      },
+      "id": "97ab12f0-49a7-47de-9b61-5fd279122edb",
+      "name": "Catalog Sync AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        1648,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "d8724d0e-75ce-464b-8770-5b7aa83660e9",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1648,
+        576
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "Cxnw1xphZUdf3APM",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.text || '';\n\nlet parsed = null;\ntry {\n  const match = text.match(/\\{[\\s\\S]*\\}/);\n  if (match) parsed = JSON.parse(match[0]);\n} catch (e) {\n  parsed = { updates: [] };\n}\n\nif (!parsed || !Array.isArray(parsed.updates)) {\n  parsed = { updates: [] };\n}\n\nif (parsed.updates.length === 0) {\n  return [{ json: { message: 'Catalog is already in sync. No changes needed.' } }];\n}\n\nreturn parsed.updates.map(u => ({ json: u }));"
+      },
+      "id": "abc64074-5158-4685-8321-2c17a75dab4c",
+      "name": "Parse AI Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1904,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "check-marketplace-id",
+              "leftValue": "={{ $json.marketplace_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "dca080b8-3c85-49e2-a76c-c9e40622ea47",
+      "name": "Has Updates?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2160,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=http://host.docker.internal:8080/api/products/{{ $json.marketplace_id }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"name\": $json.name, \"price\": $json.price } }}",
+        "options": {}
+      },
+      "id": "376babe2-82c6-4443-8639-d1c3cceba282",
+      "name": "Update Marketplace Product",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2448,
+        208
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "d163af6d-6fee-4c1d-b03e-4c0be6c7649c",
+      "name": "No Changes",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2432,
+        512
+      ]
+    }
+  ],
+  "connections": {
+    "Supplier Sync Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch Marketplace Products",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Supplier Products",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Marketplace Products": {
+      "main": [
+        [
+          {
+            "node": "Wrap Marketplace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Supplier Products": {
+      "main": [
+        [
+          {
+            "node": "Wrap Supplier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap Marketplace": {
+      "main": [
+        [
+          {
+            "node": "Merge Catalogs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wrap Supplier": {
+      "main": [
+        [
+          {
+            "node": "Merge Catalogs",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Catalogs": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Catalogs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Catalogs": {
+      "main": [
+        [
+          {
+            "node": "Catalog Sync AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Catalog Sync AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Output": {
+      "main": [
+        [
+          {
+            "node": "Has Updates?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Updates?": {
+      "main": [
+        [
+          {
+            "node": "Update Marketplace Product",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Changes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Catalog Sync AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "active": false
+}

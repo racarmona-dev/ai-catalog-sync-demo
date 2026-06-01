@@ -1,0 +1,6 @@
+CREATE DATABASE IF NOT EXISTS marketplace_db;
+CREATE DATABASE IF NOT EXISTS supplier_db;
+
+GRANT ALL PRIVILEGES ON marketplace_db.* TO 'demo'@'%';
+GRANT ALL PRIVILEGES ON supplier_db.* TO 'demo'@'%';
+FLUSH PRIVILEGES;

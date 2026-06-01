@@ -1,0 +1,22 @@
+# Maven
+target/
+*.jar
+*.war
+*.class
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Docker volumes
+mysql_data/
+n8n_data/
+
+# Artigo (gerado localmente)
+artigo-linkedin.html
