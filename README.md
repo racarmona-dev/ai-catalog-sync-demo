@@ -9,7 +9,7 @@ O fluxo detecta divergências entre o catálogo de um fornecedor e o de um marke
 ## Visão geral
 
 ```
-Supplier API  ──►  POST /api/sync/trigger
+Seller API  ──►  POST /api/sync/trigger
                          │
                          ▼
                    [n8n Webhook]
@@ -48,7 +48,7 @@ ai-catalog-sync-demo/
 ├── init.sql                    # Cria os bancos e concede permissões
 ├── catalog-sync-workflow.json  # Workflow n8n para importar
 ├── marketplace-api/            # API do marketplace (porta 8080)
-└── supplier-api/               # API do fornecedor (porta 8081)
+└── seller-api/               # API do fornecedor (porta 8081)
 ```
 
 ---
@@ -71,7 +71,7 @@ docker compose up -d
 ```
 
 Isso inicializa:
-- **MySQL 8.0** na porta `3306` com os bancos `marketplace_db` e `supplier_db`
+- **MySQL 8.0** na porta `3306` com os bancos `marketplace_db` e `seller_db`
 - **n8n** na porta `5678` (usuário: `admin` / senha: `admin`)
 
 ### 2. Suba as APIs Java
@@ -83,8 +83,8 @@ Em terminais separados:
 cd marketplace-api
 mvn spring-boot:run
 
-# Terminal 2 — Supplier API
-cd supplier-api
+# Terminal 2 — Seller API
+cd seller-api
 mvn spring-boot:run
 ```
 
@@ -146,10 +146,10 @@ Os dois bancos são populados com 5 produtos intencionalmente com preços diverg
 | GET    | `/api/products`                 | marketplace:8080 | Lista todos os produtos          |
 | POST   | `/api/products`                 | marketplace:8080 | Cria um produto                  |
 | PUT    | `/api/products/{id}`            | marketplace:8080 | Atualiza um produto              |
-| GET    | `/api/products`                 | supplier:8081    | Lista produtos do fornecedor     |
-| POST   | `/api/products`                 | supplier:8081    | Cria produto no fornecedor       |
-| PUT    | `/api/products/{id}`            | supplier:8081    | Atualiza produto no fornecedor   |
-| POST   | `/api/sync/trigger`             | supplier:8081    | Dispara a sincronização via n8n  |
+| GET    | `/api/products`                 | seller:8081    | Lista produtos do fornecedor     |
+| POST   | `/api/products`                 | seller:8081    | Cria produto no fornecedor       |
+| PUT    | `/api/products/{id}`            | seller:8081    | Atualiza produto no fornecedor   |
+| POST   | `/api/sync/trigger`             | seller:8081    | Dispara a sincronização via n8n  |
 
 ---
 
@@ -160,15 +160,15 @@ Cada API tem três camadas de testes independentes:
 ```bash
 # Unit tests e slices (rápido, sem Docker)
 mvn test -pl marketplace-api -Dtest="ProductServiceTest,ProductControllerTest,ProductRepositoryTest"
-mvn test -pl supplier-api   -Dtest="SupplierServiceTest,SupplierControllerTest,SupplierRepositoryTest"
+mvn test -pl seller-api   -Dtest="SellerServiceTest,SellerControllerTest,SellerRepositoryTest"
 
 # Integração com MySQL real via Testcontainers (requer Docker)
 mvn test -pl marketplace-api -Dtest="ProductControllerIT"
-mvn test -pl supplier-api   -Dtest="SupplierControllerIT"
+mvn test -pl seller-api   -Dtest="SellerControllerIT"
 
 # Todos os testes
 mvn test -pl marketplace-api
-mvn test -pl supplier-api
+mvn test -pl seller-api
 ```
 
 ---

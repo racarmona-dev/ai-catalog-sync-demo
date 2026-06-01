@@ -124,7 +124,7 @@
     },
     {
       "parameters": {
-        "jsCode": "const products = $input.all().map(i => i.json);\nreturn [{ json: { supplier_products: products } }];"
+        "jsCode": "const products = $input.all().map(i => i.json);\nreturn [{ json: { seller_products: products } }];"
       },
       "id": "74f87d51-75c9-4397-b08c-4d838d2bbdf7",
       "name": "Wrap Supplier",
@@ -163,7 +163,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "=You receive two product lists from a marketplace and a supplier.\nIdentify products where the name OR price diverges.\nProducts are matched by their position/index (same order in both lists).\n\nRules:\n- If name differs (case-insensitive): it is a divergence\n- If price differs by more than 0.01: it is a divergence\n- If both match: skip the product\n\nMarketplace products:\n{{ JSON.stringify($json.data[0].marketplace_products, null, 2) }}\n\nSupplier products:\n{{ JSON.stringify($json.data[1].supplier_products, null, 2) }}\n\nReturn ONLY a valid JSON object, no extra text, no markdown:\n{\n  \"updates\": [\n    {\n      \"marketplace_id\": <id from marketplace product>,\n      \"name\": <supplier name>,\n      \"price\": <supplier price>\n    }\n  ]\n}\n\nIf no divergences found, return: {\"updates\": []}"
+        "text": "=You receive two product lists from a marketplace and a seller.\nIdentify products where the name OR price diverges.\nProducts are matched by their position/index (same order in both lists).\n\nRules:\n- If name differs (case-insensitive): it is a divergence\n- If price differs by more than 0.01: it is a divergence\n- If both match: skip the product\n\nMarketplace products:\n{{ JSON.stringify($json.data[0].marketplace_products, null, 2) }}\n\nSeller products:\n{{ JSON.stringify($json.data[1].seller_products, null, 2) }}\n\nReturn ONLY a valid JSON object, no extra text, no markdown:\n{\n  \"updates\": [\n    {\n      \"marketplace_id\": <id from marketplace product>,\n      \"name\": <seller name>,\n      \"price\": <seller price>\n    }\n  ]\n}\n\nIf no divergences found, return: {\"updates\": []}"
       },
       "id": "97ab12f0-49a7-47de-9b61-5fd279122edb",
       "name": "Catalog Sync AI Agent",
